@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Diario · Minimarket</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#23553F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Minimarket">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --bg: #F5F3EE;
+    --paper: #FFFFFF;
+    --ink: #23261F;
+    --ink-soft: #6B6E64;
+    --green: #23553F;
+    --green-soft: #E7EFE8;
+    --amber: #C77B24;
+    --amber-soft: #FBEEDD;
+    --red: #A8402E;
+    --red-soft: #F6E7E3;
+    --line: #E1DDD3;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+
+  header{
+    padding:22px 20px 14px;
+    background:var(--green);
+    color:#fff;
+    border-bottom:4px solid var(--amber);
+  }
+  header h1{
+    margin:0;
+    font-size:1.35rem;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:4px 0 0;
+    font-size:0.82rem;
+    color:#CFE0D5;
+  }
+
+  nav{
+    display:flex;
+    gap:6px;
+    padding:12px 14px 0;
+    background:var(--green);
+    overflow-x:auto;
+  }
+  nav button{
+    flex:1;
+    min-width:84px;
+    padding:10px 8px;
+    border:none;
+    background:transparent;
+    color:#CFE0D5;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:0.82rem;
+    border-radius:10px 10px 0 0;
+    cursor:pointer;
+  }
+  nav button.active{
+    background:var(--bg);
+    color:var(--green);
+  }
+
+  main{ padding:16px; max-width:640px; margin:0 auto 80px; }
+  .hidden{ display:none !important; }
+
+  /* Receipt-style summary */
+  .receipt{
+    background:var(--paper);
+    border-radius:4px;
+    padding:22px 24px;
+    box-shadow:0 2px 10px rgba(35,38,31,0.08);
+    position:relative;
+    margin-bottom:18px;
+  }
+  .receipt::before, .receipt::after{
+    content:"";
+    position:absolute;
+    left:0; right:0;
+    height:10px;
+    background-image: radial-gradient(circle at 8px 5px, var(--bg) 5px, transparent 5.5px);
+    background-size:16px 10px;
+    background-repeat:repeat-x;
+  }
+  .receipt::before{ top:-5px; }
+  .receipt::after{ bottom:-5px; transform:rotate(180deg); }
+  .receipt-title{
+    text-align:center;
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:2px;
+  }
+  .receipt-date{
+    text-align:center;
+    font-size:1rem;
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  .receipt-row{
+    display:flex;
+    justify-content:space-between;
+    padding:7px 0;
+    border-bottom:1px dashed var(--line);
+    font-size:0.9rem;
+  }
+  .receipt-row.total{
+    border-bottom:none;
+    border-top:2px solid var(--ink);
+    margin-top:6px;
+    padding-top:12px;
+    font-weight:700;
+    font-size:1.05rem;
+  }
+  .receipt-row .amt{ font-family:'IBM Plex Mono',monospace; }
+  .pos{ color:var(--green); }
+  .neg{ color:var(--red); }
+
+  .period-select{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .period-select select{
+    flex:1;
+    padding:9px 10px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    font-family:'Inter',sans-serif;
+    font-size:0.85rem;
+  }
+
+  .section-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:18px 0 10px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .section-head h2{ font-size:1.05rem; margin:0; }
+  .add-btn{
+    background:var(--amber);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:9px 14px;
+    font-weight:600;
+    font-size:0.82rem;
+    cursor:pointer;
+    font-family:'Space Grotesk',sans-serif;
+  }
+
+  .card{
+    background:var(--paper);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:10px;
+    box-shadow:0 1px 4px rgba(35,38,31,0.06);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .card .info{ flex:1; min-width:0; }
+  .card .desc{ font-weight:600; font-size:0.92rem; }
+  .card .meta{ font-size:0.76rem; color:var(--ink-soft); margin-top:2px; }
+  .card .amt{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.95rem; white-space:nowrap; }
+  .card .actions{ display:flex; gap:6px; }
+  .card .actions button{
+    border:none; background:none; cursor:pointer;
+    font-size:1rem; color:var(--ink-soft); padding:4px;
+  }
+
+  .badge{
+    display:inline-block;
+    font-size:0.68rem;
+    font-weight:600;
+    padding:2px 8px;
+    border-radius:20px;
+    margin-top:3px;
+  }
+  .badge.venta{ background:var(--green-soft); color:var(--green); }
+  .badge.compra{ background:var(--amber-soft); color:var(--amber); }
+  .badge.gasto{ background:var(--red-soft); color:var(--red); }
+
+  .empty{
+    text-align:center;
+    padding:30px 10px;
+    color:var(--ink-soft);
+    font-size:0.88rem;
+  }
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(35,38,31,0.45);
+    display:flex; align-items:flex-end;
+    z-index:50;
+  }
+  .modal{
+    background:var(--paper);
+    width:100%;
+    border-radius:20px 20px 0 0;
+    padding:22px 20px 26px;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  .modal h3{ margin:0 0 16px; font-size:1.1rem; }
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:0.78rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    font-size:0.95rem;
+    font-family:'Inter',sans-serif;
+    background:#fff;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:6px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+    font-weight:600;
+    font-family:'Space Grotesk',sans-serif;
+    cursor:pointer;
+    font-size:0.9rem;
+  }
+  .btn-save{ background:var(--green); color:#fff; }
+  .btn-cancel{ background:var(--bg); color:var(--ink); }
+  .btn-delete{ background:var(--red-soft); color:var(--red); }
+
+  .toast{
+    position:fixed;
+    bottom:20px; left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:#fff;
+    padding:10px 18px;
+    border-radius:20px;
+    font-size:0.82rem;
+    z-index:100;
+    opacity:0;
+    transition:opacity 0.25s;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; }
+
+  .loading{ text-align:center; padding:40px; color:var(--ink-soft); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div id="pinGate" style="position:fixed; inset:0; background:var(--green); display:flex; align-items:center; justify-content:center; z-index:200; padding:24px;">
+  <div style="width:100%; max-width:320px; text-align:center;">
+    <div style="font-size:2.2rem; margin-bottom:6px;">🧾</div>
+    <h1 style="color:#fff; font-size:1.3rem; margin:0 0 4px;">Control Diario</h1>
+    <p style="color:#CFE0D5; font-size:0.82rem; margin:0 0 24px;">Ingresa el PIN para continuar</p>
+    <input type="password" inputmode="numeric" id="pinInput" placeholder="••••" maxlength="10"
+      style="width:100%; padding:14px; border-radius:12px; border:none; font-size:1.4rem; text-align:center; letter-spacing:6px; font-family:'IBM Plex Mono',monospace; margin-bottom:12px;">
+    <button id="pinSubmit" style="width:100%; padding:13px; border-radius:12px; border:none; background:var(--amber); color:#fff; font-weight:600; font-family:'Space Grotesk',sans-serif; font-size:0.95rem; cursor:pointer;">Entrar</button>
+    <p id="pinError" style="color:#F6C8B8; font-size:0.8rem; margin-top:12px; min-height:1em;"></p>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+<header>
+  <h1>Control Diario</h1>
+  <p>Ventas · Compras · Gastos del minimarket</p>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="resumen">Resumen</button>
+  <button class="tab-btn" data-tab="venta">Ventas</button>
+  <button class="tab-btn" data-tab="compra">Compras</button>
+  <button class="tab-btn" data-tab="gasto">Gastos</button>
+</nav>
+
+<main id="main">
+  <div class="loading" id="loading">Cargando datos…</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+let entries = [];
+let proveedoresList = [];
+let currentTab = 'resumen';
+let editingId = null;
+let filterDate = { venta: null, compra: null, gasto: null };
+let filterMode = 'pedido'; // 'pedido' or 'entrega' — only used for compras
+
+const CATS = {
+  venta: { label:'Venta', color:'venta', metodo:['Efectivo','Tarjeta','Transferencia'] },
+  compra:{ label:'Compra', color:'compra', metodo:['Contado','Crédito','Transferencia'] },
+  gasto: { label:'Gasto', color:'gasto', catGasto:['Arriendo','Servicios','Transporte','Nómina','Mantenimiento','Otros'] }
+};
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmt(n){ return '$' + Number(n).toLocaleString('es-CO', {maximumFractionDigits:0}); }
+
+const APP_PIN = '2055';
+const firebaseConfig = {
+  apiKey: "AIzaSyCyP_zXWBbiPZNoApcpwg05JEU49PK0f0o",
+  authDomain: "almendros-minimarket.firebaseapp.com",
+  projectId: "almendros-minimarket",
+  storageBucket: "almendros-minimarket.firebasestorage.app",
+  messagingSenderId: "825413995272",
+  appId: "1:825413995272:web:bab4f7fee3963b10ecbabd"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+try{ db.enablePersistence({ synchronizeTabs:true }).catch(()=>{}); }catch(e){}
+const DATA_DOC = db.collection('minimarket').doc('data');
+
+let unsubscribeSnapshot = null;
+let unsubscribeAuth = null;
+let suppressNextSave = false;
+let pinGateBound = false;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function startApp(){
+  document.getElementById('pinGate').style.display = 'none';
+  document.getElementById('appRoot').style.display = '';
+
+  auth.signInAnonymously().catch(()=>{
+    showToast('No se pudo conectar. Revisa tu internet.');
+  });
+
+  if(unsubscribeAuth) unsubscribeAuth();
+  unsubscribeAuth = auth.onAuthStateChanged((user)=>{
+    if(!user) return;
+    if(unsubscribeSnapshot) unsubscribeSnapshot();
+    unsubscribeSnapshot = DATA_DOC.onSnapshot((doc)=>{
+      if(doc.exists){
+        const data = doc.data();
+        suppressNextSave = true;
+        entries = data.entries || [];
+        proveedoresList = data.proveedores || [];
+      } else {
+        entries = [];
+        proveedoresList = [];
+        DATA_DOC.set({ entries: [], proveedores: [], updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      }
+      render();
+    }, (err)=>{
+      showToast('Error de conexión con la base de datos.');
+    });
+  });
+}
+
+function setupPinGate(){
+  const input = document.getElementById('pinInput');
+  const submitBtn = document.getElementById('pinSubmit');
+  const errorEl = document.getElementById('pinError');
+
+  if(!pinGateBound){
+    const trySubmit = ()=>{
+      if(input.value.trim() === APP_PIN){
+        localStorage.setItem('mm_pin_ok', 'true');
+        startApp();
+      } else {
+        errorEl.textContent = 'PIN incorrecto, intenta de nuevo.';
+        input.value = '';
+        input.focus();
+      }
+    };
+    submitBtn.addEventListener('click', trySubmit);
+    input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') trySubmit(); });
+    pinGateBound = true;
+  }
+
+  if(localStorage.getItem('mm_pin_ok') === 'true'){
+    startApp();
+  } else {
+    input.focus();
+  }
+}
+
+async function saveEntries(){
+  if(suppressNextSave){ suppressNextSave = false; return true; }
+  try{
+    await DATA_DOC.set({ entries, proveedores: proveedoresList, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+    return true;
+  }catch(e){
+    console.error('saveEntries error:', e);
+    if(e && e.code === 'permission-denied'){
+      showToast('Sin permiso para guardar. Revisa las reglas de Firestore.');
+    } else {
+      showToast('No se pudo guardar. Revisa tu conexión.');
+    }
+    return false;
+  }
+}
+
+async function saveProveedores(){
+  if(suppressNextSave){ suppressNextSave = false; return true; }
+  try{
+    await DATA_DOC.set({ entries, proveedores: proveedoresList, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+    return true;
+  }catch(e){
+    console.error('saveProveedores error:', e);
+    if(e && e.code === 'permission-denied'){
+      showToast('Sin permiso para guardar. Revisa las reglas de Firestore.');
+    } else {
+      showToast('No se pudo guardar el proveedor. Revisa tu conexión.');
+    }
+    return false;
+  }
+}
+
+function allProveedores(){
+  const fromEntries = entries.filter(e=>e.type==='compra' && e.proveedor).map(e=>e.proveedor);
+  return [...new Set([...proveedoresList, ...fromEntries])].sort((a,b)=>a.localeCompare(b));
+}
+
+
+
+function currentMonthKey(){
+  const d = new Date();
+  return d.toISOString().slice(0,7);
+}
+
+function render(){
+  const main = document.getElementById('main');
+  if(currentTab === 'resumen'){
+    main.innerHTML = renderResumen();
+    attachResumenEvents();
+  } else {
+    main.innerHTML = renderList(currentTab);
+    attachListEvents();
+  }
+}
+
+function isPagada(e){
+  return e.type !== 'compra' || e.estado !== 'pedido';
+}
+function fechaCaja(e){
+  if(e.type === 'compra') return e.fechaPago || e.date;
+  return e.date;
+}
+
+function renderResumen(){
+  const monthKey = window._resumenMonth || currentMonthKey();
+  const todayEntries = entries.filter(e => isPagada(e) && fechaCaja(e) === todayStr());
+  const monthEntries = entries.filter(e => isPagada(e) && fechaCaja(e).slice(0,7) === monthKey);
+
+  const sum = (list, type) => list.filter(e=>e.type===type).reduce((a,e)=>a+Number(e.amount),0);
+
+  const pendientes = entries.filter(e=>e.type==='compra' && e.estado==='pedido')
+    .sort((a,b)=> (a.fechaEntrega||a.date).localeCompare(b.fechaEntrega||b.date));
+  const totalPendiente = pendientes.reduce((a,e)=>a+Number(e.amount),0);
+
+  const tVentas = sum(todayEntries,'venta');
+  const tCompras = sum(todayEntries,'compra');
+  const tGastos = sum(todayEntries,'gasto');
+  const tBalance = tVentas - tCompras - tGastos;
+
+  const mVentas = sum(monthEntries,'venta');
+  const mCompras = sum(monthEntries,'compra');
+  const mGastos = sum(monthEntries,'gasto');
+  const mBalance = mVentas - mCompras - mGastos;
+
+  const months = [...new Set(entries.map(e=>e.date.slice(0,7)))].sort().reverse();
+  if(!months.includes(monthKey)) months.unshift(monthKey);
+
+  const monthLabel = new Date(monthKey+'-02').toLocaleDateString('es-CO',{month:'long', year:'numeric'});
+
+  return `
+    <div class="receipt">
+      <div class="receipt-title">Hoy</div>
+      <div class="receipt-date">${new Date().toLocaleDateString('es-CO',{weekday:'long', day:'numeric', month:'long'})}</div>
+      <div class="receipt-row"><span>Ventas</span><span class="amt pos">${fmt(tVentas)}</span></div>
+      <div class="receipt-row"><span>Compras pagadas</span><span class="amt neg">${fmt(tCompras)}</span></div>
+      <div class="receipt-row"><span>Gastos</span><span class="amt neg">${fmt(tGastos)}</span></div>
+      <div class="receipt-row total"><span>Balance del día</span><span class="amt ${tBalance>=0?'pos':'neg'}">${fmt(tBalance)}</span></div>
+    </div>
+
+    <div class="period-select">
+      <select id="monthSelect">
+        ${months.map(m=>`<option value="${m}" ${m===monthKey?'selected':''}>${new Date(m+'-02').toLocaleDateString('es-CO',{month:'long', year:'numeric'})}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="receipt">
+      <div class="receipt-title">Resumen mensual</div>
+      <div class="receipt-date" style="text-transform:capitalize;">${monthLabel}</div>
+      <div class="receipt-row"><span>Ventas</span><span class="amt pos">${fmt(mVentas)}</span></div>
+      <div class="receipt-row"><span>Compras pagadas</span><span class="amt neg">${fmt(mCompras)}</span></div>
+      <div class="receipt-row"><span>Gastos</span><span class="amt neg">${fmt(mGastos)}</span></div>
+      <div class="receipt-row total"><span>Balance del mes</span><span class="amt ${mBalance>=0?'pos':'neg'}">${fmt(mBalance)}</span></div>
+    </div>
+
+    ${totalPendiente > 0 ? `
+    <div class="receipt" style="border-left:4px solid var(--amber);">
+      <div class="receipt-title">Por pagar a proveedores</div>
+      <div class="receipt-row total" style="border-top:none; padding-top:0; margin-top:0;">
+        <span>${pendientes.length} pedido${pendientes.length>1?'s':''} pendiente${pendientes.length>1?'s':''}</span>
+        <span class="amt" style="color:var(--amber);">${fmt(totalPendiente)}</span>
+      </div>
+      ${pendientes[0].fechaEntrega ? `<div style="font-size:0.78rem; color:var(--ink-soft); margin-top:6px;">Próxima entrega: ${new Date(pendientes[0].fechaEntrega+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long', day:'numeric', month:'long'})}</div>` : ''}
+    </div>` : ''}
+
+    <button class="add-btn" id="downloadPdf" style="width:100%; padding:13px; font-size:0.9rem;">⬇ Descargar PDF del mes</button>
+
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="add-btn" id="exportData" style="flex:1; background:var(--ink-soft); padding:12px; font-size:0.85rem;">⬆ Exportar datos</button>
+      <button class="add-btn" id="importData" style="flex:1; background:var(--ink-soft); padding:12px; font-size:0.85rem;">⬇ Importar datos</button>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+    </div>
+    <div style="font-size:0.74rem; color:var(--ink-soft); text-align:center; margin-top:6px;">Usa esto para pasar tus datos a otro celular</div>
+
+    <button class="add-btn" id="logoutBtn" style="width:100%; padding:12px; font-size:0.85rem; background:transparent; color:var(--red); border:1px solid var(--red-soft); margin-top:18px;">🔒 Cerrar sesión</button>
+  `;
+}
+
+function attachResumenEvents(){
+  const sel = document.getElementById('monthSelect');
+  if(sel){
+    sel.addEventListener('change', ()=>{
+      window._resumenMonth = sel.value;
+      render();
+    });
+  }
+  const pdfBtn = document.getElementById('downloadPdf');
+  if(pdfBtn){
+    pdfBtn.addEventListener('click', ()=> generatePdf(window._resumenMonth || currentMonthKey()));
+  }
+
+  const exportBtn = document.getElementById('exportData');
+  if(exportBtn) exportBtn.addEventListener('click', exportData);
+
+  const importBtn = document.getElementById('importData');
+  const importFileInput = document.getElementById('importFileInput');
+  if(importBtn && importFileInput){
+    importBtn.addEventListener('click', ()=> importFileInput.click());
+    importFileInput.addEventListener('change', handleImportFile);
+  }
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(logoutBtn) logoutBtn.addEventListener('click', confirmLogout);
+}
+
+function confirmLogout(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>¿Cerrar sesión?</h3>
+      <p style="color:var(--ink-soft); font-size:0.88rem;">Tendrás que ingresar el PIN de nuevo para volver a entrar en este celular.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelLogout">Cancelar</button>
+        <button class="btn-delete" id="confirmLogoutBtn">Cerrar sesión</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelLogout').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#confirmLogoutBtn').addEventListener('click', ()=>{
+    overlay.remove();
+    logout();
+  });
+}
+
+function logout(){
+  if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+  if(unsubscribeAuth){ unsubscribeAuth(); unsubscribeAuth = null; }
+  auth.signOut().catch(()=>{});
+  localStorage.removeItem('mm_pin_ok');
+  entries = [];
+  proveedoresList = [];
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('pinGate').style.display = 'flex';
+  const pinInput = document.getElementById('pinInput');
+  const pinError = document.getElementById('pinError');
+  if(pinInput) pinInput.value = '';
+  if(pinError) pinError.textContent = '';
+  if(pinInput) pinInput.focus();
+}
+
+function exportData(){
+  const payload = {
+    entries,
+    proveedoresList,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'minimarket-datos-' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Datos exportados');
+}
+
+function handleImportFile(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let parsed;
+    try{
+      parsed = JSON.parse(e.target.result);
+    }catch(err){
+      showToast('El archivo no es válido.');
+      ev.target.value = '';
+      return;
+    }
+    if(!parsed || !Array.isArray(parsed.entries)){
+      showToast('El archivo no tiene el formato esperado.');
+      ev.target.value = '';
+      return;
+    }
+    confirmImport(parsed);
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function confirmImport(parsed){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Importar datos</h3>
+      <p style="color:var(--ink-soft); font-size:0.88rem;">Este archivo tiene ${parsed.entries.length} registro${parsed.entries.length!==1?'s':''}${parsed.exportedAt ? ' (exportado el ' + new Date(parsed.exportedAt).toLocaleDateString('es-CO') + ')' : ''}.</p>
+      <div class="modal-actions" style="flex-direction:column;">
+        <button class="btn-save" id="mergeImport">Combinar con lo que ya tengo</button>
+        <button class="btn-delete" id="replaceImport">Reemplazar todo</button>
+        <button class="btn-cancel" id="cancelImport">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#cancelImport').addEventListener('click', ()=> overlay.remove());
+
+  overlay.querySelector('#mergeImport').addEventListener('click', async ()=>{
+    const existingIds = new Set(entries.map(e=>e.id));
+    const nuevos = parsed.entries.filter(e=> !existingIds.has(e.id));
+    entries = [...entries, ...nuevos];
+    if(Array.isArray(parsed.proveedoresList)){
+      proveedoresList = [...new Set([...proveedoresList, ...parsed.proveedoresList])];
+    }
+    overlay.remove();
+    render();
+    const ok = await saveEntries();
+    if(ok) showToast(nuevos.length + ' registro(s) agregado(s)');
+  });
+
+  overlay.querySelector('#replaceImport').addEventListener('click', async ()=>{
+    entries = parsed.entries;
+    proveedoresList = Array.isArray(parsed.proveedoresList) ? parsed.proveedoresList : [];
+    overlay.remove();
+    render();
+    const ok = await saveEntries();
+    if(ok) showToast('Datos reemplazados');
+  });
+}
+
+function generatePdf(monthKey){
+  if(typeof window.jspdf === 'undefined'){
+    showToast('Cargando generador de PDF, intenta de nuevo en un momento…');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 40;
+  let y = 50;
+
+  const monthLabel = new Date(monthKey+'-02').toLocaleDateString('es-CO',{month:'long', year:'numeric'});
+  const monthCashEntries = entries.filter(e => isPagada(e) && fechaCaja(e).slice(0,7) === monthKey)
+    .sort((a,b)=> fechaCaja(a).localeCompare(fechaCaja(b)));
+  const pendientesTodas = entries.filter(e=>e.type==='compra' && e.estado==='pedido')
+    .sort((a,b)=> (a.fechaEntrega||a.date).localeCompare(b.fechaEntrega||b.date));
+
+  const sum = (list, type) => list.filter(e=>e.type===type).reduce((a,e)=>a+Number(e.amount),0);
+  const mVentas = sum(monthCashEntries,'venta');
+  const mCompras = sum(monthCashEntries,'compra');
+  const mGastos = sum(monthCashEntries,'gasto');
+  const mBalance = mVentas - mCompras - mGastos;
+  const totalPendiente = pendientesTodas.reduce((a,e)=>a+Number(e.amount),0);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(35,85,63);
+  doc.text('Control Diario · Minimarket', marginX, y);
+  y += 20;
+  doc.setFontSize(11);
+  doc.setTextColor(90,90,90);
+  doc.setFont('helvetica','normal');
+  const label = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+  doc.text('Reporte mensual: ' + label, marginX, y);
+  y += 26;
+
+  // Summary box
+  doc.setDrawColor(225,221,211);
+  doc.setLineWidth(1);
+  doc.rect(marginX, y, pageWidth - marginX*2, 92);
+  y += 22;
+  doc.setFontSize(10);
+  doc.setTextColor(35,38,31);
+  const summaryRows = [
+    ['Ventas', mVentas, [35,85,63]],
+    ['Compras pagadas', -mCompras, [168,64,46]],
+    ['Gastos', -mGastos, [168,64,46]]
+  ];
+  summaryRows.forEach(([label, val, color])=>{
+    doc.setTextColor(35,38,31);
+    doc.text(label, marginX + 14, y);
+    doc.setTextColor(...color);
+    doc.text((val<0?'-':'') + fmt(Math.abs(val)), pageWidth - marginX - 14, y, {align:'right'});
+    y += 18;
+  });
+  doc.setDrawColor(35,38,31);
+  doc.line(marginX + 14, y - 4, pageWidth - marginX - 14, y - 4);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('Balance del mes', marginX + 14, y + 12);
+  doc.setTextColor(mBalance>=0?35:168, mBalance>=0?85:64, mBalance>=0?63:46);
+  doc.text(fmt(mBalance), pageWidth - marginX - 14, y + 12, {align:'right'});
+  doc.setFont('helvetica','normal');
+  y += 44;
+
+  if(totalPendiente > 0){
+    doc.setFillColor(251,238,221);
+    doc.rect(marginX, y, pageWidth - marginX*2, 26, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(199,123,36);
+    doc.text(`Por pagar a proveedores (${pendientesTodas.length} pedido${pendientesTodas.length>1?'s':''})`, marginX + 12, y + 17);
+    doc.text(fmt(totalPendiente), pageWidth - marginX - 12, y + 17, {align:'right'});
+    doc.setFont('helvetica','normal');
+    y += 38;
+  }
+
+  // Itemized sections
+  const sections = [
+    { type:'venta', title:'Ventas' },
+    { type:'compra', title:'Compras pagadas' },
+    { type:'gasto', title:'Gastos' }
+  ];
+
+  sections.forEach(sec=>{
+    const items = monthCashEntries.filter(e=>e.type===sec.type);
+    if(y > 740){ doc.addPage(); y = 50; }
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.setTextColor(35,85,63);
+    doc.text(sec.title, marginX, y);
+    y += 16;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(35,38,31);
+
+    if(items.length === 0){
+      doc.setTextColor(120,120,120);
+      doc.text('Sin registros este mes.', marginX, y);
+      y += 18;
+    } else {
+      items.forEach(e=>{
+        if(y > 780){ doc.addPage(); y = 50; }
+        const dateStr = new Date(fechaCaja(e)+'T00:00:00').toLocaleDateString('es-CO',{day:'2-digit', month:'2-digit'});
+        const extra = e.metodo ? (' · ' + e.metodo) : '';
+        const prov = e.proveedor ? (' · ' + e.proveedor) : '';
+        const cat = e.categoria ? (' · ' + e.categoria) : '';
+        const desc = (e.description || sec.title) + extra + prov + cat;
+        doc.setTextColor(35,38,31);
+        doc.text(dateStr, marginX, y);
+        doc.text(desc.length > 70 ? desc.slice(0,67)+'...' : desc, marginX + 45, y);
+        doc.text(fmt(e.amount), pageWidth - marginX, y, {align:'right'});
+        y += 15;
+      });
+      y += 10;
+    }
+  });
+
+  if(pendientesTodas.length > 0){
+    if(y > 720){ doc.addPage(); y = 50; }
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.setTextColor(199,123,36);
+    doc.text('Pedidos pendientes por pagar', marginX, y);
+    y += 16;
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9.5);
+    pendientesTodas.forEach(e=>{
+      if(y > 780){ doc.addPage(); y = 50; }
+      const dateStr = new Date(e.date+'T00:00:00').toLocaleDateString('es-CO',{day:'2-digit', month:'2-digit'});
+      const entregaStr = e.fechaEntrega ? (' · Entrega ' + new Date(e.fechaEntrega+'T00:00:00').toLocaleDateString('es-CO',{day:'2-digit', month:'2-digit'})) : '';
+      const prov = e.proveedor ? (' · ' + e.proveedor) : '';
+      const desc = (e.description || 'Compra') + prov + entregaStr;
+      doc.setTextColor(35,38,31);
+      doc.text(dateStr, marginX, y);
+      doc.text(desc.length > 70 ? desc.slice(0,67)+'...' : desc, marginX + 45, y);
+      doc.setTextColor(199,123,36);
+      doc.text(fmt(e.amount), pageWidth - marginX, y, {align:'right'});
+      y += 15;
+    });
+  }
+
+  doc.save('control-minimarket-' + monthKey + '.pdf');
+  showToast('PDF descargado');
+}
+
+function renderList(type){
+  let list = entries.filter(e=>e.type===type);
+  const activeFilter = filterDate[type];
+  const useEntregaMode = type==='compra' && filterMode==='entrega';
+  if(activeFilter){
+    list = list.filter(e=> useEntregaMode ? e.fechaEntrega === activeFilter : e.date === activeFilter);
+  }
+  list = list.sort((a,b)=>{
+    if(type==='compra' && !activeFilter){
+      const aPend = a.estado==='pedido', bPend = b.estado==='pedido';
+      if(aPend && bPend) return (a.fechaEntrega||a.date).localeCompare(b.fechaEntrega||b.date);
+      if(aPend !== bPend) return aPend ? -1 : 1;
+    }
+    return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
+  });
+  const label = CATS[type].label;
+  const rows = list.map(e=>{
+    const metaBits = [];
+    if(e.metodo) metaBits.push(e.metodo);
+    if(e.categoria) metaBits.push(e.categoria);
+    if(e.proveedor) metaBits.push(e.proveedor);
+    const pendiente = type==='compra' && e.estado==='pedido';
+    metaBits.push((pendiente ? 'Pedido' : 'Pagado') + ' ' + new Date((pendiente ? e.date : (e.fechaPago||e.date))+'T00:00:00').toLocaleDateString('es-CO',{day:'numeric', month:'short'}));
+    if(pendiente && e.fechaEntrega){
+      metaBits.push('Entrega ' + new Date(e.fechaEntrega+'T00:00:00').toLocaleDateString('es-CO',{day:'numeric', month:'short'}));
+    }
+    const statusBadge = type==='compra' ? `<span class="badge ${pendiente?'gasto':'venta'}">${pendiente?'Pendiente':'Pagado'}</span>` : '';
+    return `
+      <div class="card" data-id="${e.id}">
+        <div class="info">
+          <div class="desc">${e.description || label}</div>
+          <div class="meta">${metaBits.join(' · ')}</div>
+          ${statusBadge}
+        </div>
+        <div class="amt ${type==='venta'?'pos':'neg'}">${type==='venta'?'':'-'}${fmt(e.amount)}</div>
+        <div class="actions">
+          ${pendiente ? `<button class="pay-btn" data-id="${e.id}" title="Marcar como pagada">✅</button>` : ''}
+          <button class="edit-btn" data-id="${e.id}">✏️</button>
+          <button class="del-btn" data-id="${e.id}">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const totalFiltrado = list.reduce((a,e)=>a+Number(e.amount),0);
+
+  // Grouped daily summary (shown when browsing all, not a single-day filter)
+  let groupSummary = '';
+  if(!activeFilter && list.length){
+    const groupKeyOf = e => (type==='compra' && useEntregaMode) ? e.fechaEntrega : e.date;
+    const groupable = list.filter(e => groupKeyOf(e));
+    if(groupable.length){
+      const groups = {};
+      groupable.forEach(e=>{
+        const k = groupKeyOf(e);
+        if(!groups[k]) groups[k] = { count:0, total:0 };
+        groups[k].count += 1;
+        groups[k].total += Number(e.amount);
+      });
+      const keys = Object.keys(groups).sort();
+      const rowsHtml = keys.map(k=>{
+        const g = groups[k];
+        const dLabel = new Date(k+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long', day:'numeric', month:'short'});
+        return `<div class="card group-day" data-date="${k}" style="padding:10px 14px; cursor:pointer;">
+          <div class="info"><div class="desc" style="font-size:0.85rem; text-transform:capitalize;">${dLabel}</div><div class="meta">${g.count} pedido${g.count!==1?'s':''}</div></div>
+          <div class="amt neg">${fmt(g.total)}</div>
+        </div>`;
+      }).join('');
+      groupSummary = `
+        <div style="font-size:0.78rem; color:var(--ink-soft); font-weight:600; margin:4px 0 6px;">Suma por ${useEntregaMode ? 'fecha de entrega' : 'fecha de pedido'}</div>
+        ${rowsHtml}
+        <div style="height:14px;"></div>
+      `;
+    }
+  }
+
+  const modeToggle = type==='compra' ? `
+    <div style="display:flex; gap:6px; margin-bottom:8px;">
+      <button class="mode-toggle" data-mode="pedido" style="flex:1; padding:7px; border-radius:8px; border:1px solid var(--line); background:${filterMode==='pedido'?'var(--green)':'var(--paper)'}; color:${filterMode==='pedido'?'#fff':'var(--ink)'}; font-size:0.78rem; font-weight:600; cursor:pointer;">Por fecha de pedido</button>
+      <button class="mode-toggle" data-mode="entrega" style="flex:1; padding:7px; border-radius:8px; border:1px solid var(--line); background:${filterMode==='entrega'?'var(--green)':'var(--paper)'}; color:${filterMode==='entrega'?'#fff':'var(--ink)'}; font-size:0.78rem; font-weight:600; cursor:pointer;">Por fecha de entrega</button>
+    </div>` : '';
+
+  const filterBar = `
+    ${modeToggle}
+    <div class="period-select" style="align-items:center;">
+      <input type="date" id="filterDateInput" value="${activeFilter||''}" style="flex:1; padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:var(--paper); font-family:'Inter',sans-serif; font-size:0.85rem;">
+      ${activeFilter ? `<button class="btn-cancel" id="clearFilter" style="flex:none; padding:9px 14px; border-radius:10px; border:none; font-weight:600; cursor:pointer;">Ver todos</button>` : ''}
+    </div>
+    ${activeFilter ? `<div style="font-size:0.8rem; color:var(--ink-soft); margin:-6px 0 12px;">${list.length} registro${list.length!==1?'s':''} · Total: ${fmt(totalFiltrado)}</div>` : ''}
+  `;
+
+  return `
+    <div class="section-head">
+      <h2>${label}s</h2>
+      <div style="display:flex; gap:6px;">
+        ${type==='compra' ? `<button class="add-btn" id="openProveedores" style="background:var(--green);">Proveedores</button>` : ''}
+        <button class="add-btn" id="openAdd">+ Nueva</button>
+      </div>
+    </div>
+    ${filterBar}
+    ${groupSummary}
+    ${list.length ? rows : `<div class="empty">${activeFilter ? (useEntregaMode ? 'No hay pedidos con entrega en esa fecha.' : 'No hay registros en esa fecha.') : `Aún no hay ${label.toLowerCase()}s registradas.<br>Toca "+ Nueva" para agregar la primera.`}</div>`}
+  `;
+}
+
+function attachListEvents(){
+  const openBtn = document.getElementById('openAdd');
+  if(openBtn) openBtn.addEventListener('click', ()=> openModal(currentTab, null));
+  document.querySelectorAll('.edit-btn').forEach(b=>{
+    b.addEventListener('click', ()=> openModal(currentTab, b.dataset.id));
+  });
+  document.querySelectorAll('.del-btn').forEach(b=>{
+    b.addEventListener('click', ()=> confirmDelete(b.dataset.id));
+  });
+  document.querySelectorAll('.pay-btn').forEach(b=>{
+    b.addEventListener('click', ()=> markAsPaid(b.dataset.id));
+  });
+  const provBtn = document.getElementById('openProveedores');
+  if(provBtn) provBtn.addEventListener('click', openProveedoresModal);
+
+  const filterInput = document.getElementById('filterDateInput');
+  if(filterInput){
+    filterInput.addEventListener('change', ()=>{
+      filterDate[currentTab] = filterInput.value || null;
+      render();
+    });
+  }
+  const clearBtn = document.getElementById('clearFilter');
+  if(clearBtn){
+    clearBtn.addEventListener('click', ()=>{
+      filterDate[currentTab] = null;
+      render();
+    });
+  }
+  document.querySelectorAll('.mode-toggle').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      filterMode = b.dataset.mode;
+      filterDate.compra = null;
+      render();
+    });
+  });
+  document.querySelectorAll('.group-day').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      filterDate[currentTab] = b.dataset.date;
+      render();
+    });
+  });
+}
+
+function openProveedoresModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+
+  const renderProvList = () => allProveedores().map(p => `
+    <div class="card" style="padding:10px 12px;">
+      <div class="info"><div class="desc" style="font-size:0.88rem;">${p}</div></div>
+      <div class="actions"><button class="prov-del" data-name="${p}">🗑️</button></div>
+    </div>`).join('');
+
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Proveedores</h3>
+      <div class="field">
+        <label>Agregar proveedor</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="f-nuevo-prov" placeholder="Nombre del proveedor" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--line);">
+          <button class="btn-save" id="addProvBtn" style="flex:none; padding:10px 16px;">Agregar</button>
+        </div>
+      </div>
+      <div id="provListWrap" style="margin-top:12px; max-height:40vh; overflow-y:auto;">
+        ${renderProvList()}
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="closeProvModal">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#closeProvModal').addEventListener('click', ()=>{ overlay.remove(); render(); });
+
+  const refreshList = ()=>{ overlay.querySelector('#provListWrap').innerHTML = renderProvList(); attachProvDelete(); };
+  const attachProvDelete = ()=>{
+    overlay.querySelectorAll('.prov-del').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        const name = b.dataset.name;
+        const usado = entries.some(e=>e.type==='compra' && e.proveedor===name);
+        if(usado){
+          showToast('Ya tiene compras registradas, no se puede quitar de la lista.');
+          return;
+        }
+        proveedoresList = proveedoresList.filter(p=>p!==name);
+        const ok = await saveProveedores();
+        refreshList();
+        if(ok) showToast('Proveedor eliminado');
+      });
+    });
+  };
+  attachProvDelete();
+
+  overlay.querySelector('#addProvBtn').addEventListener('click', async ()=>{
+    const input = overlay.querySelector('#f-nuevo-prov');
+    const name = input.value.trim();
+    if(!name){ showToast('Escribe un nombre.'); return; }
+    if(allProveedores().some(p=>p.toLowerCase()===name.toLowerCase())){
+      showToast('Ese proveedor ya existe.');
+      return;
+    }
+    proveedoresList.push(name);
+    const ok = await saveProveedores();
+    input.value = '';
+    refreshList();
+    if(ok) showToast('Proveedor agregado');
+  });
+}
+
+function markAsPaid(id){
+  const entry = entries.find(e=>e.id===id);
+  if(!entry) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Marcar como pagada</h3>
+      <p style="color:var(--ink-soft); font-size:0.88rem; margin-top:-8px;">${entry.description || 'Compra'} — ${fmt(entry.amount)}</p>
+      <div class="field">
+        <label>Fecha de pago</label>
+        <input type="date" id="f-fechapago" value="${todayStr()}">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelPay">Cancelar</button>
+        <button class="btn-save" id="confirmPay">Confirmar pago</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelPay').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#confirmPay').addEventListener('click', async ()=>{
+    const fechaPago = document.getElementById('f-fechapago').value;
+    entries = entries.map(e => e.id===id ? {...e, estado:'pagado', fechaPago} : e);
+    overlay.remove();
+    render();
+    const ok = await saveEntries();
+    if(ok) showToast('Compra marcada como pagada');
+  });
+}
+
+function confirmDelete(id){
+  const entry = entries.find(e=>e.id===id);
+  if(!entry) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>¿Eliminar este registro?</h3>
+      <p style="color:var(--ink-soft); font-size:0.88rem;">${entry.description || CATS[entry.type].label} — ${fmt(entry.amount)}</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelDel">Cancelar</button>
+        <button class="btn-delete" id="confirmDel">Eliminar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cancelDel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#confirmDel').addEventListener('click', async ()=>{
+    entries = entries.filter(e=>e.id!==id);
+    overlay.remove();
+    render();
+    const ok = await saveEntries();
+    if(ok) showToast('Registro eliminado');
+  });
+}
+
+function openModal(type, id){
+  editingId = id;
+  const entry = id ? entries.find(e=>e.id===id) : null;
+  const cfg = CATS[type];
+
+  let extraField = '';
+  if(type==='venta' || type==='compra'){
+    const options = cfg.metodo.map(m=>`<option value="${m}" ${entry && entry.metodo===m?'selected':''}>${m}</option>`).join('');
+    extraField = `
+      <div class="field">
+        <label>${type==='venta'?'Método de pago':'Condición de pago'}</label>
+        <select id="f-metodo">${options}</select>
+      </div>`;
+    if(type==='compra'){
+      const estadoActual = entry ? (entry.estado || 'pagado') : 'pedido';
+      extraField += `
+      <div class="field">
+        <label>Proveedor</label>
+        <input type="text" id="f-proveedor" list="proveedores-list" value="${entry?.proveedor||''}" placeholder="Nombre del proveedor" autocomplete="off">
+        <datalist id="proveedores-list">
+          ${allProveedores().map(p=>`<option value="${p}"></option>`).join('')}
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Fecha de entrega esperada</label>
+        <input type="date" id="f-entrega" value="${entry?.fechaEntrega || ''}">
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="f-estado">
+          <option value="pedido" ${estadoActual==='pedido'?'selected':''}>Pedido (aún no pagado)</option>
+          <option value="pagado" ${estadoActual==='pagado'?'selected':''}>Pagado</option>
+        </select>
+      </div>
+      <div class="field" id="f-fechapago-wrap" style="${estadoActual==='pedido'?'display:none;':''}">
+        <label>Fecha de pago</label>
+        <input type="date" id="f-fechapago" value="${entry?.fechaPago || todayStr()}">
+      </div>`;
+    }
+  } else if(type==='gasto'){
+    const options = cfg.catGasto.map(c=>`<option value="${c}" ${entry && entry.categoria===c?'selected':''}>${c}</option>`).join('');
+    extraField = `
+      <div class="field">
+        <label>Categoría</label>
+        <select id="f-categoria">${options}</select>
+      </div>`;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>${entry ? 'Editar' : 'Nueva'} ${cfg.label.toLowerCase()}</h3>
+      <div class="field">
+        <label>${type==='compra' ? 'Fecha del pedido' : 'Fecha'}</label>
+        <input type="date" id="f-fecha" value="${entry?.date || todayStr()}">
+      </div>
+      <div class="field">
+        <label>Monto</label>
+        <input type="number" id="f-monto" value="${entry?.amount || ''}" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Descripción</label>
+        <input type="text" id="f-desc" value="${entry?.description || ''}" placeholder="${type==='venta' ? 'Ej: venta mostrador' : type==='compra' ? 'Ej: mercancía surtido' : 'Ej: pago arriendo local'}">
+      </div>
+      ${extraField}
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelModal">Cancelar</button>
+        <button class="btn-save" id="saveModal">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#cancelModal').addEventListener('click', ()=> overlay.remove());
+
+  const estadoSel = overlay.querySelector('#f-estado');
+  if(estadoSel){
+    estadoSel.addEventListener('change', ()=>{
+      const wrap = overlay.querySelector('#f-fechapago-wrap');
+      wrap.style.display = estadoSel.value === 'pedido' ? 'none' : '';
+    });
+  }
+
+  overlay.querySelector('#saveModal').addEventListener('click', async ()=>{
+    const fecha = document.getElementById('f-fecha').value;
+    const monto = parseFloat(document.getElementById('f-monto').value);
+    const desc = document.getElementById('f-desc').value.trim();
+
+    if(!fecha || isNaN(monto) || monto <= 0){
+      showToast('Revisa la fecha y el monto.');
+      return;
+    }
+
+    const data = { id: entry?.id || uid(), type, date: fecha, amount: monto, description: desc };
+    if(type==='venta' || type==='compra'){
+      data.metodo = document.getElementById('f-metodo').value;
+      if(type==='compra'){
+        data.proveedor = document.getElementById('f-proveedor').value.trim();
+        data.fechaEntrega = document.getElementById('f-entrega').value || null;
+        data.estado = document.getElementById('f-estado').value;
+        data.fechaPago = data.estado === 'pagado' ? document.getElementById('f-fechapago').value : null;
+      }
+    }
+    if(type==='gasto'){
+      data.categoria = document.getElementById('f-categoria').value;
+    }
+
+    if(entry){
+      entries = entries.map(e=> e.id===entry.id ? data : e);
+    } else {
+      entries.push(data);
+    }
+    overlay.remove();
+    render();
+    const ok = await saveEntries();
+    if(ok){
+      showToast('Guardado correctamente');
+    } else {
+      // revert local optimistic change since it wasn't actually saved
+      if(entry){
+        entries = entries.map(e=> e.id===entry.id ? entry : e);
+      } else {
+        entries = entries.filter(e=> e.id!==data.id);
+      }
+      render();
+    }
+  });
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = btn.dataset.tab;
+    render();
+  });
+});
+
+async function requestPersistentStorage(){
+  if(navigator.storage && navigator.storage.persist){
+    try{ await navigator.storage.persist(); }catch(e){ /* not critical if it fails */ }
+  }
+}
+
+requestPersistentStorage();
+setupPinGate();
+</script>
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+    });
+  }
+</script>
+</body>
+</html>
